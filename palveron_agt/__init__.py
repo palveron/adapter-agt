@@ -1,23 +1,23 @@
 """
-vexis-agt — VEXIS Governance Bridge for Microsoft Agent Governance Toolkit
+palveron-agt — PALVERON Governance Bridge for Microsoft Agent Governance Toolkit
 ==========================================================================
 
-Connects Microsoft AGT's local policy enforcement with VEXIS centralized
+Connects Microsoft AGT's local policy enforcement with PALVERON centralized
 governance. Two-way bridge:
 
-1. **Policies FROM VEXIS**: AGT fetches policies from VEXIS API instead of local YAML
-2. **Evidence TO VEXIS**: AGT enforcement decisions flow back as VEXIS traces
+1. **Policies FROM PALVERON**: AGT fetches policies from PALVERON API instead of local YAML
+2. **Evidence TO PALVERON**: AGT enforcement decisions flow back as PALVERON traces
 
 Usage::
 
-    from vexis_agt import VexisAGTBridge
+    from palveron_agt import PalveronAGTBridge
 
-    bridge = VexisAGTBridge(api_key="gp_live_xxx")
+    bridge = PalveronAGTBridge(api_key="pv_live_xxx")
 
-    # Fetch policies from VEXIS for local AGT enforcement
+    # Fetch policies from PALVERON for local AGT enforcement
     policies = bridge.fetch_policies()
 
-    # Report enforcement decisions back to VEXIS
+    # Report enforcement decisions back to PALVERON
     bridge.report_decision(
         agent_id="agent_123",
         tool="database_query",
@@ -33,12 +33,12 @@ import time
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from vexis import Vexis, VerifyRequest, VexisError
+from palveron import Palveron, VerifyRequest, PalveronError
 
 __version__ = "0.1.0"
-__all__ = ["VexisAGTBridge", "AGTPolicy"]
+__all__ = ["PalveronAGTBridge", "AGTPolicy"]
 
-logger = logging.getLogger("vexis_agt")
+logger = logging.getLogger("palveron_agt")
 
 
 @dataclass(frozen=True)
@@ -53,26 +53,26 @@ class AGTPolicy:
     priority: int
 
 
-class VexisAGTBridge:
+class PalveronAGTBridge:
     """
-    Bridge between Microsoft Agent Governance Toolkit and VEXIS.
+    Bridge between Microsoft Agent Governance Toolkit and PALVERON.
 
-    Enables centralized policy management through VEXIS while leveraging
-    AGT's local sub-millisecond enforcement. Evidence flows back to VEXIS
+    Enables centralized policy management through PALVERON while leveraging
+    AGT's local sub-millisecond enforcement. Evidence flows back to PALVERON
     for unified audit trails and blockchain attestation.
 
     Architecture::
 
         ┌─────────────────┐     Policies      ┌──────────────┐
-        │  VEXIS Gateway  │ ──────────────────→│  Microsoft   │
+        │  PALVERON Gateway  │ ──────────────────→│  Microsoft   │
         │  (Central)      │                    │  AGT (Local) │
         │                 │ ←──────────────────│              │
         │  Traces + Audit │     Evidence       │  <1ms Enforce│
         └─────────────────┘                    └──────────────┘
 
     Args:
-        api_key: VEXIS project API key.
-        base_url: Gateway URL (default: https://gateway.vexis.io).
+        api_key: PALVERON project API key.
+        base_url: Gateway URL (default: https://gateway.palveron.com).
         sync_interval: How often to sync policies in seconds (default: 300).
     """
 
@@ -80,11 +80,11 @@ class VexisAGTBridge:
         self,
         api_key: str,
         *,
-        base_url: str = "https://gateway.vexis.io",
+        base_url: str = "https://gateway.palveron.com",
         sync_interval: int = 300,
         metadata: Optional[dict[str, Any]] = None,
     ):
-        self._client = Vexis(api_key=api_key, base_url=base_url)
+        self._client = Palveron(api_key=api_key, base_url=base_url)
         self._sync_interval = sync_interval
         self._metadata = metadata or {}
         self._policies_cache: list[AGTPolicy] = []
@@ -92,10 +92,10 @@ class VexisAGTBridge:
 
     def fetch_policies(self, environment: str = "prod") -> list[AGTPolicy]:
         """
-        Fetch active policies from VEXIS and convert to AGT-compatible format.
+        Fetch active policies from PALVERON and convert to AGT-compatible format.
 
         AGT can use these to enforce locally at sub-millisecond speed while
-        VEXIS remains the central policy authority.
+        PALVERON remains the central policy authority.
 
         Returns:
             List of policies in AGT-compatible format.
@@ -116,11 +116,11 @@ class VexisAGTBridge:
                 )
             self._policies_cache = policies
             self._last_sync = time.monotonic()
-            logger.info("📋 Synced %d policies from VEXIS", len(policies))
+            logger.info("📋 Synced %d policies from PALVERON", len(policies))
             return policies
 
-        except VexisError as e:
-            logger.error("Failed to sync policies from VEXIS: %s", e)
+        except PalveronError as e:
+            logger.error("Failed to sync policies from PALVERON: %s", e)
             return self._policies_cache  # Return cached if sync fails
 
     def report_decision(
@@ -134,9 +134,9 @@ class VexisAGTBridge:
         metadata: Optional[dict[str, Any]] = None,
     ) -> Optional[str]:
         """
-        Report an AGT enforcement decision back to VEXIS for unified audit trail.
+        Report an AGT enforcement decision back to PALVERON for unified audit trail.
 
-        This creates a trace in VEXIS that links the local AGT decision
+        This creates a trace in PALVERON that links the local AGT decision
         with the centralized governance record.
 
         Args:
@@ -148,7 +148,7 @@ class VexisAGTBridge:
             metadata: Extra metadata.
 
         Returns:
-            VEXIS trace_id if successful, None on failure.
+            PALVERON trace_id if successful, None on failure.
         """
         merged_meta = {
             **self._metadata,
@@ -167,13 +167,13 @@ class VexisAGTBridge:
                 )
             )
             logger.debug(
-                "📝 AGT decision reported to VEXIS: %s → %s (trace: %s)",
+                "📝 AGT decision reported to PALVERON: %s → %s (trace: %s)",
                 decision, result.decision.value, result.trace_id,
             )
             return result.trace_id
 
         except Exception as e:
-            logger.warning("Failed to report AGT decision to VEXIS: %s", e)
+            logger.warning("Failed to report AGT decision to PALVERON: %s", e)
             return None
 
     def should_sync(self) -> bool:
@@ -188,7 +188,7 @@ class VexisAGTBridge:
             YAML string that can be written to AGT's policy config.
         """
         pol_list = policies or self._policies_cache
-        lines = ["# Auto-generated from VEXIS — do not edit manually", "policies:"]
+        lines = ["# Auto-generated from PALVERON — do not edit manually", "policies:"]
         for p in pol_list:
             lines.extend([
                 f"  - name: {p.name}",
@@ -204,7 +204,7 @@ class VexisAGTBridge:
 
 
 def _infer_action(policy: dict[str, Any]) -> str:
-    """Infer AGT action from VEXIS policy data."""
+    """Infer AGT action from PALVERON policy data."""
     prompt = (policy.get("prompt") or "").lower()
     if any(w in prompt for w in ["block", "deny", "prevent", "reject"]):
         return "DENY"
