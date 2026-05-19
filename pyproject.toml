@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "palveron-agt"
-version = "1.0.0"
+version = "1.1.0"
 description = "Palveron adapter for Microsoft Agent Governance Toolkit (AGT) — enforce Palveron governance policies locally in AutoGen and LangChain agent pipelines."
 readme = "README.md"
 license = { text = "MIT" }
@@ -36,7 +36,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "palveron-sdk>=1.0.0",
+    "palveron-sdk>=1.1.0",
 ]
 
 [project.optional-dependencies]

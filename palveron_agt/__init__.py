@@ -35,7 +35,7 @@ from typing import Any, Optional
 
 from palveron import Palveron, VerifyRequest, PalveronError
 
-__version__ = "0.1.0"
+__version__ = "1.1.0"
 __all__ = ["PalveronAGTBridge", "AGTPolicy"]
 
 logger = logging.getLogger("palveron_agt")
